@@ -31,3 +31,17 @@
 # Debug files
 *.dSYM/
 *.su
+
+# Autotools files
+aclocal.m4
+autom4te.cache
+*.in
+compile
+config*
+!configure.ac
+depcomp
+install-sh
+libtool
+ltmain.sh
+missing
+stamp-h1
