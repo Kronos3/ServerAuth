@@ -33,6 +33,8 @@
 *.su
 
 # Autotools files
+#Makefile*
+!Makefile.am
 aclocal.m4
 autom4te.cache
 *.in
