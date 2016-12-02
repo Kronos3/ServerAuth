@@ -110,7 +110,7 @@ unsigned char* makeAlphaString( int dataSize )
   int i;
   for( i = 0 ; i < dataSize ; i++ )
     s[i] = 65 + i ;
-  s[i-1]=0;//NULL TERMINATOR ;)
+  s[i-1]=0;
   
   return s ;
 }
@@ -169,14 +169,4 @@ char* auth_decrypt (char* asciiEncrypted)
   RSA_free(privKey) ;
   ERR_free_strings();
   return asciiDecrypted;
-}
-
-int main (int argc, char** argv)
-{
-  printf(auth_encrypt(argv[1]));
-  printf("\n");
-  
-  printf (auth_decrypt(argv[2]));
-  printf("\n");
-  return 0;
 }
