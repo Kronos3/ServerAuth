@@ -1,7 +1,7 @@
 /*
- * serverauth.h
+ * server.h
  * 
- * Copyright 2016 Andrei Tumbar <atuser@Kronos>
+ * Copyright 2016 Andrei Tumbar <atuser@Kronos-Ubuntu>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,24 +21,31 @@
  * 
  */
 
-#ifndef __SERVERAUTH_H__
-#define __SERVERAUTH_H__
+
+#ifndef __AUTOGENTOO_HTTP_SERVER__
+#define __AUTOGENTOO_HTTP_SERVER__
 
 #include <stdio.h>
-#include <authencrypt.h>
-#include <hashcheck.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <ifaddrs.h>
+#include <netinet/in.h> 
 
-struct request_handler {
-    char *  request [2];
-    char *  (*handler[2]) (char* arg);
-};
+#define CONNMAX 1000
+#define BYTES 102400
 
-extern struct request_handler * m_request_handler;
-
-void init_request_handler (void) __attribute__ ((constructor));
-void exit_request_handler (void) __attribute__ ((destructor));
-char* handle_request(char* req);
-void file_write (struct file_structure * fs);
-void run_server (int port);
+char *ROOT;
+int listenfd, clients[CONNMAX];
+void error         (char *);
+void startServer   (char *);
+void respond       (int);
 
 #endif

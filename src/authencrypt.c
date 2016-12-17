@@ -23,6 +23,7 @@
 
 
 #include <authencrypt.h>
+#include <base64.h>
 
 // private key
 const char *b64_pKey = "-----BEGIN PUBLIC KEY-----\n\

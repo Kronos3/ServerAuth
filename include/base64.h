@@ -28,8 +28,8 @@
   YWxsIHlvdXIgYmFzZSBhcmUgYmVsb25nIHRvIHVz
 */
 
-#ifndef BASE64_H
-#define BASE64_H
+#ifndef __BASE64_H__
+#define __BASE64_H__
 
 #include <stdio.h>
 #include <stdlib.h>

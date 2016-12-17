@@ -21,6 +21,9 @@
  * 
  */
 
+#ifndef __HASHCHECK_H__
+#define __HASHCHECK_H__
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -40,3 +43,5 @@ unsigned long get_size_by_fd(int fd);
 void get_file_md5 (char* filepath, unsigned char md5array[MD5_DIGEST_LENGTH]);
 void hash_init (char* hash_conf, struct file_structure * fs);
 int check_hash (struct file_structure * fs);
+
+#endif

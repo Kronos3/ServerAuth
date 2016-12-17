@@ -21,6 +21,8 @@
  * 
  */
 
+#ifndef __AUTHENCRYPT_H__
+#define __AUTHENCRYPT_H__
 
 #include <stdio.h>
 #include <string.h>
@@ -29,7 +31,6 @@
 #include <openssl/rsa.h>
 #include <openssl/engine.h>
 #include <openssl/pem.h>
-#include <base64.h>
 
 #define PADDING RSA_PKCS1_PADDING
 
@@ -45,3 +46,5 @@ char* rsaEncryptThenBase64( RSA *pubKey, unsigned char* binaryData, int binaryDa
 unsigned char* rsaDecryptThisBase64( RSA *privKey, char* base64String, int *outLen );
 char* auth_encrypt (char* asciiData);
 char* auth_decrypt (char* asciiEncrypted);
+
+#endif
