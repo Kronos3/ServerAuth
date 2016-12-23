@@ -37,15 +37,17 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
-#include <netinet/in.h> 
+#include <netinet/in.h>
 
-#define CONNMAX 1000
+
+#define CONNMAX 3
 #define BYTES 102400
 
 char *ROOT;
-int listenfd, clients[CONNMAX];
+int  listenfd, clients[CONNMAX];
 void error         (char *);
 void startServer   (char *);
 void respond       (int);
+void handle_exit   (int a);
 
 #endif

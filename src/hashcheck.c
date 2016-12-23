@@ -23,6 +23,19 @@
 
 #include <hashcheck.h>
 
+int ar_index (char** in_arr, char* to_index)
+{
+    int i;
+    for (i=0; in_arr[i]; i++)
+    {
+        if (strcmp(in_arr[i], to_index)==0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 unsigned long get_size_by_fd(int fd) {
     struct stat statbuf;
     if(fstat(fd, &statbuf) < 0) exit(-1);

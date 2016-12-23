@@ -29,8 +29,8 @@
 #include <hashcheck.h>
 
 struct request_handler {
-    char *  request [2];
-    char *  (*handler[2]) (char* arg);
+    char *   request[3];
+    char *  (*handler[3]) (char** arg);
 };
 
 extern struct request_handler * m_request_handler;

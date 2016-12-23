@@ -22,7 +22,14 @@
  */
 
 #include <stdio.h>
-#include <http/server.h>
+#include <server.h>
+#include <serverauth.h>
+
+void handle_exit(int a) {
+    close (listenfd);
+    printf ("\nserver shutdown\n");
+    exit(1);
+}
 
 //start server
 void startServer(char *port)
@@ -39,7 +46,7 @@ void startServer(char *port)
     perror ("getaddrinfo() error");
     exit(1);
   }
-  // socket and bind
+  printf("Started server on port %s\n", port);
   for (p = res; p!=NULL; p=p->ai_next)
   {
     listenfd = socket (p->ai_family, p->ai_socktype, 0);
@@ -78,15 +85,19 @@ void respond(int n)
     fprintf(stderr,"Client disconnected upexpectedly.\n");
   else  // message received
   {
+      
     printf("%s", mesg);
     reqline[0] = strtok (mesg, " \t\n");
     if ( strncmp(reqline[0], "GET\0", 4)==0 )
     {
+      printf ("GET\n");
       reqline[1] = strtok (NULL, " \t");
+      printf ("%s", reqline[1]);
       reqline[2] = strtok (NULL, " \t\n");
       if ( strncmp( reqline[2], "HTTP/1.0", 8)!=0 && strncmp( reqline[2], "HTTP/1.1", 8)!=0 )
       {
         write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
+        printf("400\n");
       }
       else
       {
@@ -118,18 +129,9 @@ void respond(int n)
       {
         if ( strncmp(reqline[1], "/\0", 2)==0 )
           reqline[1] = "";
-
-        strcpy(path, ROOT);
-        strcpy(&path[strlen(ROOT)], reqline[1]);
-        printf("file: %s\n", path);
-
-        if ( (fd=open(path, O_RDONLY))!=-1 )  //FILE FOUND
-        {
-          send(clients[n], "HTTP/1.0 200 OK\n\n", 17, 0);
-          while ( (bytes_read=read(fd, data_to_send, BYTES))>0 )
-            write (clients[n], data_to_send, bytes_read);
-        }
-        else  write(clients[n], "HTTP/1.0 404 Not Found\n", 23); //FILE NOT FOUND
+        
+        char* ret = handle_request (reqline[1]);
+        send(clients[n], ret, 17, 0);
       }
     }
   }

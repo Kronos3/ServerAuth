@@ -145,8 +145,6 @@ unsigned char* rsaDecryptThisBase64( RSA *privKey, char* base64String, int *outL
   
   return decryptedBin ;
 }
-  
-
 
 char* auth_encrypt (char* asciiData)
 {
