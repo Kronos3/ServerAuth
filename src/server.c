@@ -72,7 +72,7 @@ void startServer(char *port)
 //client connection
 void respond(int n)
 {
-  char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
+  char mesg[99999], data_to_send[BYTES], path[99999];
   int rcvd, fd, bytes_read;
 
   memset( (void*)mesg, (int)'\0', 99999 );
@@ -85,52 +85,57 @@ void respond(int n)
     fprintf(stderr,"Client disconnected upexpectedly.\n");
   else  // message received
   {
-      
+    char req_t[8], req[128], version[32];
     printf("%s", mesg);
-    reqline[0] = strtok (mesg, " \t\n");
-    if ( strncmp(reqline[0], "GET\0", 4)==0 )
+    sscanf (mesg, "%s %s %s[^\n]", req_t, req, version);
+    printf ("req_t=%s\nreq=%s\nversion=%s\n", req_t, req, version);
+    if ( strcmp(req_t, "GET")==0 )
     {
-      printf ("GET\n");
-      reqline[1] = strtok (NULL, " \t");
-      printf ("%s", reqline[1]);
-      reqline[2] = strtok (NULL, " \t\n");
-      if ( strncmp( reqline[2], "HTTP/1.0", 8)!=0 && strncmp( reqline[2], "HTTP/1.1", 8)!=0 )
+      if ( strncmp( version, "HTTP/1.0", 8)!=0 && strncmp( version, "HTTP/1.1", 8)!=0 )
       {
         write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
         printf("400\n");
       }
       else
       {
-        if ( strncmp(reqline[1], "/\0", 2)==0 )
-          reqline[1] = "";
-
+        char r_path[128], domain[32];
+        if ( strncmp (req, "http://", 7)==0)
+        {
+            sscanf (req, "%*[^/][^/]%s[^/]%s", domain, r_path);
+        }
+        else
+          strcpy(r_path, req);
+        
+        if (strcmp(r_path, "/") == 0)
+            strcpy(r_path, "/index.html");
+        
         strcpy(path, ROOT);
-        strcpy(&path[strlen(ROOT)], reqline[1]);
+        strcpy(&path[strlen(ROOT)], "/html");
+        strcpy(&path[strlen(path)], r_path);
         printf("file: %s\n", path);
-
         if ( (fd=open(path, O_RDONLY))!=-1 )  //FILE FOUND
         {
           send(clients[n], "HTTP/1.0 200 OK\n\n", 17, 0);
           while ( (bytes_read=read(fd, data_to_send, BYTES))>0 )
             write (clients[n], data_to_send, bytes_read);
         }
-        else  write(clients[n], "HTTP/1.0 404 Not Found\n", 23); //FILE NOT FOUND
+        else
+        {
+            write(clients[n], "HTTP/1.0 404 Not Found\n", 23); //FILE NOT FOUND
+            printf("404\n");
+        }
       }
     }
-    else if ( strncmp(reqline[0], "REQ\0", 4)==0 )
+    else if ( strcmp(req_t, "REQ")==0 )
     {
-      reqline[1] = strtok (NULL, " \t");
-      reqline[2] = strtok (NULL, " \t\n");
-      if ( strncmp( reqline[2], "HTTP/1.0", 8)!=0 && strncmp( reqline[2], "HTTP/1.1", 8)!=0 )
+      if ( strncmp( version, "HTTP/1.0", 8)!=0 && strncmp( version, "HTTP/1.1", 8)!=0 )
       {
         write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
+        printf("400\n");
       }
       else
       {
-        if ( strncmp(reqline[1], "/\0", 2)==0 )
-          reqline[1] = "";
-        
-        char* ret = handle_request (reqline[1]);
+        char* ret = handle_request (req);
         send(clients[n], ret, 17, 0);
       }
     }

@@ -98,7 +98,8 @@ int main (int argc, char** argv)
     signal(SIGINT, handle_exit);
     
     char PORT[6];
-    strcpy(PORT,"8002");
+    strcpy(PORT,"8004");
+    ROOT = getenv("PWD");
     int slot=0;
     
     int i;

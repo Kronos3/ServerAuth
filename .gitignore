@@ -48,3 +48,4 @@ ltmain.sh
 missing
 stamp-h1
 *.Po
+*src/authserver*
