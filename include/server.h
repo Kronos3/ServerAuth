@@ -40,14 +40,19 @@
 #include <netinet/in.h>
 
 
-#define CONNMAX 3
+#define CONNMAX 1000
 #define BYTES 102400
+#define BUFSIZE 1024
 
-char *ROOT;
+extern char *ROOT;
+extern char* S_PORT;
 int  listenfd, clients[CONNMAX];
+
 void error         (char *);
 void startServer   (char *);
 void respond       (int);
 void handle_exit   (int a);
+void strrev        (char *p);
+void send_request  (char *request, char* res);
 
 #endif

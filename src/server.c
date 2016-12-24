@@ -25,10 +25,81 @@
 #include <server.h>
 #include <serverauth.h>
 
+char* S_PORT;
+char *ROOT;
+
 void handle_exit(int a) {
     close (listenfd);
     printf ("\nserver shutdown\n");
     exit(1);
+}
+
+void strrev(char *p)
+{
+  char *q = p;
+  while(q && *q) ++q;
+  for(--q; p < q; ++p, --q)
+    *p = *p ^ *q,
+    *q = *p ^ *q,
+    *p = *p ^ *q;
+}
+
+void error(char *msg) {
+    perror(msg);
+    exit(0);
+}
+
+void send_request  (char *request, char* res)
+{
+    int sockfd, portno, n;
+    struct sockaddr_in serveraddr;
+    struct hostent *server;
+    char *hostname;
+    char buf[BUFSIZE];
+
+    
+    hostname = "localhost";
+    portno = 8000;
+
+    /* socket: create the socket */
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+        error("ERROR opening socket");
+
+    /* gethostbyname: get the server's DNS entry */
+    server = gethostbyname(hostname);
+    if (server == NULL) {
+        fprintf(stderr,"ERROR, no such host as %s\n", hostname);
+        exit(0);
+    }
+
+    /* build the server's Internet address */
+    bzero((char *) &serveraddr, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr, 
+	  (char *)&serveraddr.sin_addr.s_addr, server->h_length);
+    serveraddr.sin_port = htons(portno);
+
+    /* connect: create a connection with the server */
+    if (connect(sockfd, (struct sockaddr*) &serveraddr, sizeof(serveraddr)) < 0) 
+      error("ERROR connecting");
+
+    /* get message line from the user */
+    bzero(buf, BUFSIZE);
+    strcpy(buf, request);
+
+    /* send the message line to the server */
+    n = write(sockfd, buf, strlen(buf));
+    if (n < 0) 
+      error("ERROR writing to socket");
+
+    /* print the server's reply */
+    bzero(buf, BUFSIZE);
+    n = read(sockfd, buf, BUFSIZE);
+    if (n < 0)
+      error("ERROR reading from socket");
+    strcpy (res, buf);
+    close(sockfd);
 }
 
 //start server
@@ -47,6 +118,7 @@ void startServer(char *port)
     exit(1);
   }
   printf("Started server on port %s\n", port);
+  S_PORT = port;
   for (p = res; p!=NULL; p=p->ai_next)
   {
     listenfd = socket (p->ai_family, p->ai_socktype, 0);
@@ -85,10 +157,14 @@ void respond(int n)
     fprintf(stderr,"Client disconnected upexpectedly.\n");
   else  // message received
   {
-    char req_t[8], req[128], version[32];
+    char req_t[8], req[128], version[32], body[2048];
     printf("%s", mesg);
     sscanf (mesg, "%s %s %s[^\n]", req_t, req, version);
-    printf ("req_t=%s\nreq=%s\nversion=%s\n", req_t, req, version);
+    strcpy(body, mesg);
+    strrev(body);
+    sscanf(body, "%s[^\n]", body);
+    strrev(body);
+    printf ("\nreq_t=%s\nreq=%s\nversion=%s\nbody=%s\n", req_t, req, version, body);
     if ( strcmp(req_t, "GET")==0 )
     {
       if ( strncmp( version, "HTTP/1.0", 8)!=0 && strncmp( version, "HTTP/1.1", 8)!=0 )
@@ -101,7 +177,7 @@ void respond(int n)
         char r_path[128], domain[32];
         if ( strncmp (req, "http://", 7)==0)
         {
-            sscanf (req, "%*[^/][^/]%s[^/]%s", domain, r_path);
+          sscanf (req, "%*[^/][^/]%[^/]%s", domain, r_path);
         }
         else
           strcpy(r_path, req);
@@ -115,6 +191,7 @@ void respond(int n)
         printf("file: %s\n", path);
         if ( (fd=open(path, O_RDONLY))!=-1 )  //FILE FOUND
         {
+          printf("opened file\n");
           send(clients[n], "HTTP/1.0 200 OK\n\n", 17, 0);
           while ( (bytes_read=read(fd, data_to_send, BYTES))>0 )
             write (clients[n], data_to_send, bytes_read);
@@ -126,6 +203,32 @@ void respond(int n)
         }
       }
     }
+    else if (strcmp(req_t, "POST")==0 )
+    {
+        if (strcmp(body, "en-US,en;q=0.8")==0)
+            write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
+        else
+        {
+            printf ("post\n");
+            char user[32], pass[32], save[2];
+            sscanf(body, "user=%[^&]&pass=%[^&]&save=%s", user, pass, save);
+            /* [DECRYPT THE USER AND PASS] */
+            char request[128], *response;
+            response = malloc (sizeof (char)*128);
+            printf("user=%s\npass=%s\nsave=%s\n", user, pass, save);
+            sprintf(request, "r_login|%s|%s|%s", user, pass, save);
+            printf("%s\n", request);
+            send_request (request, response);
+            printf(response);
+            fflush(stdout);
+            char ret[10];
+            sscanf(response, "%*[^\"]\"%[^\"]", ret);
+            if (strcmp(ret, "false")==0)
+                write(clients[n], "HTTP/1.0 401 Unauthorized", 25);
+            else
+                write(clients[n], "HTTP/1.0 200 OK", 25);
+        }
+    }
     else if ( strcmp(req_t, "REQ")==0 )
     {
       if ( strncmp( version, "HTTP/1.0", 8)!=0 && strncmp( version, "HTTP/1.1", 8)!=0 )
@@ -136,7 +239,7 @@ void respond(int n)
       else
       {
         char* ret = handle_request (req);
-        send(clients[n], ret, 17, 0);
+        write(clients[n], ret, strlen(ret));
       }
     }
   }
