@@ -38,6 +38,9 @@
 #include <fcntl.h>
 #include <ifaddrs.h>
 #include <netinet/in.h>
+#include <authencrypt.h>
+#include <httpencrypt.h>
+#include <openssl/err.h>
 
 
 #define CONNMAX 1000

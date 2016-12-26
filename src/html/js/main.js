@@ -1,21 +1,46 @@
-var login_post = {
-  type: "POST",
-  url: window.location.href,
-  data: {user:"dovakhiin1359", pass:"helloitsapass", save:"1"},
-  success: function(msg){
-    alert( "Data Saved: " + msg );
-  },
-  error: function(XMLHttpRequest, textStatus, errorThrown) {
-    if (errorThrown == "Bad Request")
-    {
-        login();
+var encrypt = new JSEncrypt();
+encrypt.setPublicKey("-----BEGIN PUBLIC KEY-----\n\
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDxrHo1+SMguB/UOytsPhjlDx4B\n\
+Ix5611YfxyVqPS46szesaQVBwNiIaiMU2IceGMxvF8flovrZ+QbTY9Sd365aNMn7\n\
+VpMkGfPa57Ji6COmA/gCBFy1HJ6mJs//xgJRpmDSxzm1LBwmO3w1CbZQh/LFDg4c\n\
++xREZwG+S0JNwDnUGwIDAQAB\n\
+-----END PUBLIC KEY-----");
+
+String.prototype.format = function() {
+    var formatted = this;
+    for (var i = 0; i < arguments.length; i++) {
+        var regexp = new RegExp('\\{'+i+'\\}', 'gi');
+        formatted = formatted.replace(regexp, arguments[i]);
     }
-    if (errorThrown == "Unauthorized")
+    return formatted;
+};
+
+function enc_pass(user, pass)
+{
+    if (user == "" || pass == "")
     {
-        $('.wrongpass').css("display", "block");
+        return encrypt.encrypt("user={0}\\pass={1}\\save=1".format ("placeholder", "passholder"));
     }
-  }
+    return encrypt.encrypt("user={0}\\pass={1}\\save=1".format (user, pass));
 }
+
 function login(){
-    $.ajax(login_post);
+    $.ajax({
+    type: "POST",
+    url: window.location.href,
+    data: enc_pass($("#email").val(), $("#passwd").val()),
+    success: function(msg){
+        
+    },
+    error: function(XMLHttpRequest, textStatus, errorThrown) {
+        if (errorThrown == "Bad Request")
+        {
+            //login();
+        }
+        if (errorThrown == "Unauthorized")
+        {
+            $('.wrongpass').css("display", "block");
+        }
+    }
+});
 }

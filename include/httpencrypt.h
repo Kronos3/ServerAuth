@@ -1,5 +1,5 @@
 /*
- * authencrypt.h
+ * httpencrypt.h
  * 
  * Copyright 2016 Andrei Tumbar <atuser@Kronos>
  * 
@@ -21,40 +21,30 @@
  * 
  */
 
-#ifndef __AUTHENCRYPT_H__
-#define __AUTHENCRYPT_H__
+#ifndef __HTTPENCRYPT_H__
+#define __HTTPENCRYPT_H__
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
 #include <openssl/rsa.h>
-#include <openssl/evp.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
+#include <openssl/engine.h>
 #include <openssl/pem.h>
 
 #define PADDING RSA_PKCS1_PADDING
 
-struct RSA_ENC {
-    char* encrypted;
-    int len;
-};
+const char *b64_pKey;
+const char *b64priv_key;
 
-struct RSA_FILE {
-    struct RSA_ENC * list;
-};
-
-const char *publicKey;
-const char *privKey;
-
-RSA * createRSA(unsigned char * key,int public);
-int public_encrypt(unsigned char * data,int data_len,unsigned char * key, unsigned char *encrypted);
-int private_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted);
-void printLastError(char *msg);
-struct RSA_ENC auth_encrypt (unsigned char* asciiData);
-char* auth_decrypt (struct RSA_ENC);
+RSA* loadPUBLICKeyFromString( const char* publicKeyStr );
+RSA* loadPRIVATEKeyFromString( const char* privateKeyStr );
+unsigned char* rsaEncrypt( RSA *pubKey, const unsigned char* str, int dataSize, int *resultLen );
+unsigned char* rsaDecrypt( RSA *privKey, const unsigned char* encryptedData, int *resultLen );
+unsigned char* makeAlphaString( int dataSize );
+char* rsaEncryptThenBase64( RSA *pubKey, unsigned char* binaryData, int binaryDataLen, int *outLen );
+unsigned char* rsaDecryptThisBase64( RSA *privKey, char* base64String, int *outLen );
+char* http_encrypt (char* asciiData);
+char* http_decrypt (char* asciiEncrypted);
 
 #endif

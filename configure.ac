@@ -9,7 +9,7 @@ LT_INIT
 AC_SUBST([LIBTOOL_DEPS])
 
 AC_CHECK_LIB([crypto], [RSA_public_encrypt], [], AC_MSG_ERROR([*** libcrypto not found.]))
-
+AC_CHECK_LIB(ssl, SSL_library_init)
 AC_CONFIG_FILES([
   Makefile
   src/Makefile

@@ -28,6 +28,8 @@
 char* S_PORT;
 char *ROOT;
 
+char RSA_ENCRYPT[3072];
+
 void handle_exit(int a) {
     close (listenfd);
     printf ("\nserver shutdown\n");
@@ -203,7 +205,7 @@ void respond(int n)
         }
       }
     }
-    else if (strcmp(req_t, "POST")==0 )
+    else if (strcmp(req_t, "POST")==0 && strcmp(req, "/")==0)
     {
         if (strcmp(body, "en-US,en;q=0.8")==0)
             write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
@@ -211,8 +213,9 @@ void respond(int n)
         {
             printf ("post\n");
             char user[32], pass[32], save[2];
-            sscanf(body, "user=%[^&]&pass=%[^&]&save=%s", user, pass, save);
-            /* [DECRYPT THE USER AND PASS] */
+            
+            strcpy (body, http_decrypt(body));
+            sscanf(body, "user=%[^\\]\\pass=%[^\\]\\save=%s", user, pass, save);
             char request[128], *response;
             response = malloc (sizeof (char)*128);
             printf("user=%s\npass=%s\nsave=%s\n", user, pass, save);
