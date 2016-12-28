@@ -38,8 +38,8 @@
 #include <encode.h>
 
 struct file_structure {
-    unsigned char** f_md5;
-    unsigned char** f_paths;
+    unsigned char* f_md5[128];
+    unsigned char* f_paths[128];
 };
 
 extern struct file_structure * main_f_struct;

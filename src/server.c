@@ -23,7 +23,6 @@
 
 #include <stdio.h>
 #include <server.h>
-#include <serverauth.h>
 
 char* S_PORT;
 char *ROOT;
@@ -58,7 +57,6 @@ void send_request  (char *request, char* res)
     struct hostent *server;
     char *hostname;
     char buf[BUFSIZE];
-
     
     hostname = "localhost";
     portno = 8000;
@@ -161,6 +159,7 @@ void respond(int n)
   {
     char req_t[8], req[128], version[32], body[2048];
     sscanf (mesg, "%s %s %s[^\n]", req_t, req, version);
+    printf ("%s\n", mesg);
     strcpy(body, mesg);
     strrev(body);
     sscanf(body, "%s[^\n]", body);
@@ -183,7 +182,6 @@ void respond(int n)
         
         if (strcmp(r_path, "/") == 0)
             strcpy(r_path, "/index.html");
-        
         strcpy(path, ROOT);
         strcpy(&path[strlen(ROOT)], "/html");
         strcpy(&path[strlen(path)], r_path);
@@ -205,8 +203,9 @@ void respond(int n)
             write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
         else
         {
-            char user[32], pass[32], save[2];
-            
+            char user[32], pass[32], save[2], encrypted[256];
+            FILE * fp = fopen ("html/passwd.cache", "w+b");
+            strcpy (encrypted, body);
             strcpy (body, http_decrypt(body));
             sscanf(body, "user=%[^\\]\\pass=%[^\\]\\save=%s", user, pass, save);
             char request[128], *response;
@@ -219,19 +218,35 @@ void respond(int n)
                 write(clients[n], "HTTP/1.0 401 Unauthorized", 25);
             else
                 write(clients[n], "HTTP/1.0 200 OK", 25);
+                fwrite (encrypted, strlen(encrypted), 1, fp);
+            fclose (fp);
         }
     }
-    else if ( strcmp(req_t, "REQ")==0 )
+    else if ( strcmp(req_t, "PASS")==0 )
     {
-      if ( strncmp( version, "HTTP/1.0", 8)!=0 && strncmp( version, "HTTP/1.1", 8)!=0 )
-      {
-        write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
-      }
-      else
-      {
-        char* ret = handle_request (req);
-        write(clients[n], ret, strlen(ret));
-      }
+        if ( strncmp( version, "HTTP/1.0", 8)!=0 && strncmp( version, "HTTP/1.1", 8)!=0 )
+        {
+            write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
+        }
+        else
+        {
+            char user[32], pass[32], save[2], enc[256];
+            FILE * fp = fopen ("html/passwd.cache", "rb");
+            fread (enc, sizeof(char), 172, fp);
+            fclose (fp);
+            strcpy (enc, http_decrypt(enc));
+            sscanf(enc, "user=%[^\\]\\pass=%[^\\]\\save=%s", user, pass, save);
+            char request[128], *response;
+            response = malloc (sizeof (char)*128);
+            sprintf(request, "r_login|%s|%s|%s", user, pass, save);
+            send_request (request, response);
+            char ret[10];
+            sscanf(response, "%*[^\"]\"%[^\"]", ret);
+            if (strcmp(ret, "false")==0)
+                write(clients[n], "HTTP/1.0 401 Unauthorized", 25);
+            else
+                write(clients[n], "HTTP/1.0 200 OK", 25);
+        }
     }
   }
 

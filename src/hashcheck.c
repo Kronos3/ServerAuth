@@ -79,8 +79,6 @@ void hash_init (char* hash_conf, struct file_structure * fs) {
     
     fp = fopen(hash_conf, "r");
     
-    fs->f_paths = malloc (sizeof (char*)*MAX_FILES);
-    fs->f_md5 = malloc (sizeof (char*)*MAX_FILES);
     int i;
     for (i = 0; (read = getline(&line, &len, fp)) != -1; i++) {
         if (strcmp (line, "\0")==0)
@@ -118,9 +116,6 @@ void get_md5 (char* file, struct file_structure * fs) {
     FILE * fp = fopen(file, "rb");
     if (fp == NULL)
         exit(EXIT_FAILURE);
-    
-    fs->f_paths = malloc (sizeof (char*)*MAX_FILES);
-    fs->f_md5 = malloc (sizeof (char*)*MAX_FILES);
     
     fread (fs, sizeof(struct file_structure), 1, fp);
     fclose(fp);
