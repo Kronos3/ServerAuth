@@ -38,15 +38,6 @@
 
 #define PADDING RSA_PKCS1_PADDING
 
-struct RSA_ENC {
-    char* encrypted;
-    int len;
-};
-
-struct RSA_FILE {
-    struct RSA_ENC * list;
-};
-
 const char *publicKey;
 const char *privKey;
 
@@ -54,7 +45,7 @@ RSA * createRSA(unsigned char * key,int public);
 int public_encrypt(unsigned char * data,int data_len,unsigned char * key, unsigned char *encrypted);
 int private_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted);
 void printLastError(char *msg);
-struct RSA_ENC auth_encrypt (unsigned char* asciiData);
-char* auth_decrypt (struct RSA_ENC);
+void auth_encrypt (unsigned char* asciiData, unsigned char* dest);
+unsigned char* auth_decrypt (unsigned char* asciiData);
 
 #endif

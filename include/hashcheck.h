@@ -33,12 +33,13 @@
 #include <string.h>
 #include <openssl/md5.h>
 #include <authencrypt.h>
+#include <httpencrypt.h>
 #include <unistd.h>
+#include <encode.h>
 
 struct file_structure {
     unsigned char** f_md5;
     unsigned char** f_paths;
-    int len;
 };
 
 extern struct file_structure * main_f_struct;
@@ -48,6 +49,7 @@ unsigned long get_size_by_fd(int fd);
 void get_file_md5 (char* filepath, unsigned char md5array[MD5_DIGEST_LENGTH]);
 void hash_init (char* hash_conf, struct file_structure * fs);
 int check_hash (struct file_structure * fs);
+void removechar( char str[], char t );
 void dump_md5 (char*, struct file_structure*);
 void get_md5 (char*, struct file_structure*);
 

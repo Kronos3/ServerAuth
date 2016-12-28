@@ -160,19 +160,16 @@ void respond(int n)
   else  // message received
   {
     char req_t[8], req[128], version[32], body[2048];
-    printf("%s", mesg);
     sscanf (mesg, "%s %s %s[^\n]", req_t, req, version);
     strcpy(body, mesg);
     strrev(body);
     sscanf(body, "%s[^\n]", body);
     strrev(body);
-    printf ("\nreq_t=%s\nreq=%s\nversion=%s\nbody=%s\n", req_t, req, version, body);
     if ( strcmp(req_t, "GET")==0 )
     {
       if ( strncmp( version, "HTTP/1.0", 8)!=0 && strncmp( version, "HTTP/1.1", 8)!=0 )
       {
         write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
-        printf("400\n");
       }
       else
       {
@@ -190,10 +187,8 @@ void respond(int n)
         strcpy(path, ROOT);
         strcpy(&path[strlen(ROOT)], "/html");
         strcpy(&path[strlen(path)], r_path);
-        printf("file: %s\n", path);
         if ( (fd=open(path, O_RDONLY))!=-1 )  //FILE FOUND
         {
-          printf("opened file\n");
           send(clients[n], "HTTP/1.0 200 OK\n\n", 17, 0);
           while ( (bytes_read=read(fd, data_to_send, BYTES))>0 )
             write (clients[n], data_to_send, bytes_read);
@@ -201,7 +196,6 @@ void respond(int n)
         else
         {
             write(clients[n], "HTTP/1.0 404 Not Found\n", 23); //FILE NOT FOUND
-            printf("404\n");
         }
       }
     }
@@ -211,19 +205,14 @@ void respond(int n)
             write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
         else
         {
-            printf ("post\n");
             char user[32], pass[32], save[2];
             
             strcpy (body, http_decrypt(body));
             sscanf(body, "user=%[^\\]\\pass=%[^\\]\\save=%s", user, pass, save);
             char request[128], *response;
             response = malloc (sizeof (char)*128);
-            printf("user=%s\npass=%s\nsave=%s\n", user, pass, save);
             sprintf(request, "r_login|%s|%s|%s", user, pass, save);
-            printf("%s\n", request);
             send_request (request, response);
-            printf(response);
-            fflush(stdout);
             char ret[10];
             sscanf(response, "%*[^\"]\"%[^\"]", ret);
             if (strcmp(ret, "false")==0)
@@ -237,7 +226,6 @@ void respond(int n)
       if ( strncmp( version, "HTTP/1.0", 8)!=0 && strncmp( version, "HTTP/1.1", 8)!=0 )
       {
         write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
-        printf("400\n");
       }
       else
       {

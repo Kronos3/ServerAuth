@@ -23,6 +23,10 @@
 
 #include <hashcheck.h>
 
+#define MAX_FILES 32
+
+struct file_structure * main_f_struct;
+
 int ar_index (char** in_arr, char* to_index)
 {
     int i;
@@ -42,16 +46,26 @@ unsigned long get_size_by_fd(int fd) {
     return statbuf.st_size;
 }
 
-void get_file_md5 (char* filepath, unsigned char md5array[MD5_DIGEST_LENGTH]) {
-    int file_descript;
-    unsigned long file_size;
-    char* file_buffer;
-    
-    file_descript = open(filepath, O_RDONLY);
-    file_size = get_size_by_fd(file_descript);
-    file_buffer = mmap(0, file_size, PROT_READ, MAP_SHARED, file_descript, 0);
-    MD5((unsigned char*) file_buffer, file_size, md5array);
-    munmap(file_buffer, file_size); 
+void get_file_md5 (char* filename, unsigned char ss[MD5_DIGEST_LENGTH]) {
+    int n;
+    MD5_CTX c;
+    char buf[512];
+    ssize_t bytes;
+    unsigned char out[MD5_DIGEST_LENGTH];
+
+    MD5_Init(&c);
+    removechar (filename, '\n');
+    FILE * fp = fopen (filename, "rb");
+    while((bytes=fread(buf, 1, 512, fp)) != 0)
+    {
+        MD5_Update(&c, buf, bytes);
+    }
+    fclose (fp);
+
+    MD5_Final(out, &c);
+    int i;
+    for(i = 0; i < MD5_DIGEST_LENGTH; i++)
+        sprintf(ss+i, "%02x", out[i]);
 }
 
 /*
@@ -65,12 +79,50 @@ void hash_init (char* hash_conf, struct file_structure * fs) {
     
     fp = fopen(hash_conf, "r");
     
+    fs->f_paths = malloc (sizeof (char*)*MAX_FILES);
+    fs->f_md5 = malloc (sizeof (char*)*MAX_FILES);
     int i;
     for (i = 0; (read = getline(&line, &len, fp)) != -1; i++) {
-        fs->f_paths[i] = line;
-        get_file_md5 (fs->f_paths[i], fs->f_md5[i]);
+        if (strcmp (line, "\0")==0)
+            continue;
+        fs->f_paths[i] = malloc (sizeof (char) * strlen(line));
+        fs->f_md5[i] = malloc (sizeof (char) * 32);
+        strcpy(fs->f_paths[i], line);
+        fs->f_paths[i][strlen(fs->f_paths[i])-1] = 0;
+        get_file_md5 (line, fs->f_md5[i]);
     }
     
+    fclose(fp);
+}
+
+void dump_md5 (char* file, struct file_structure * fs) {
+    FILE * fp = fopen (file, "w+b");
+    fwrite (fs, sizeof(struct file_structure), 1, fp);
+    fclose (fp);
+}
+
+void removechar( char str[], char t )
+{
+  int i,j;
+  for(i=0; i<strlen(str); i++)
+  {
+    if (str[i]==t)
+      for (j=i; j<strlen(str); j++)
+      {
+        str[j]=str[j+1];   
+      } 
+  }
+}
+
+void get_md5 (char* file, struct file_structure * fs) {
+    FILE * fp = fopen(file, "rb");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+    
+    fs->f_paths = malloc (sizeof (char*)*MAX_FILES);
+    fs->f_md5 = malloc (sizeof (char*)*MAX_FILES);
+    
+    fread (fs, sizeof(struct file_structure), 1, fp);
     fclose(fp);
 }
 

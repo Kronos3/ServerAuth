@@ -26,13 +26,11 @@
 #include <signal.h>
 #include <time.h>
 
-char* authurl;
-
 struct request_handler * m_request_handler;
 
 char* save_creds (char** arg) {
     FILE *creds = fopen("creds.cache", "w+");
-    fprintf(creds, auth_encrypt (arg[0]));
+    //fprintf(creds, auth_encrypt (arg[0]));
     fclose(creds);
     return "creds.cache";
 }
@@ -66,23 +64,17 @@ void gen_random(char *s, const int len)
     s[len] = 0;
 }
 
-char* auth_url (char** arg) {
-    gen_random(authurl, 12);
-    return authurl;
-}
-
 char* check_creds(char** arg) {
     
 }
 
 void init_request_handler (void) {
+    main_f_struct = malloc (sizeof(struct file_structure));
     m_request_handler = malloc (sizeof(struct request_handler));
     m_request_handler->request[0] = "save_creds";
-    m_request_handler->request[1] = "auth_url";
-    m_request_handler->request[2] = "check_creds";
+    m_request_handler->request[1] = "check_creds";
     m_request_handler->handler[0] = save_creds;
-    m_request_handler->handler[1] = auth_url;
-    m_request_handler->handler[2] = check_creds;
+    m_request_handler->handler[1] = check_creds;
 }
 
 void exit_request_handler (void) {
@@ -91,6 +83,11 @@ void exit_request_handler (void) {
 
 int main (int argc, char** argv)
 {
+    hash_init ("hash.conf", main_f_struct);
+    dump_md5 ("test", main_f_struct);
+    struct file_structure * file_s = malloc (sizeof(struct file_structure));
+    get_md5 ("test", file_s);
+    /* The Server */
     struct sockaddr_in clientaddr;
     socklen_t addrlen;
     char c;
@@ -98,8 +95,11 @@ int main (int argc, char** argv)
     signal(SIGINT, handle_exit);
     
     char PORT[6];
-    strcpy(PORT,"8003");
-    ROOT = getenv("PWD");
+    strcpy(PORT,"8002");
+    if (getcwd(ROOT, sizeof(ROOT)) != NULL)
+        ;
+    else
+        perror("getcwd() error");
     int slot=0;
     
     int i;
@@ -120,7 +120,6 @@ int main (int argc, char** argv)
         if ( fork()==0 )
         {
           respond(slot);
-          printf("\nresponded\n");
         }
       }
     

@@ -23,17 +23,16 @@
 
 
 #include <authencrypt.h>
-#include <base64.h>
 
 // private key
-const char *b64_pKey = "-----BEGIN PUBLIC KEY-----\n\
+const char *publicKey = "-----BEGIN PUBLIC KEY-----\n\
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDxrHo1+SMguB/UOytsPhjlDx4B\n\
 Ix5611YfxyVqPS46szesaQVBwNiIaiMU2IceGMxvF8flovrZ+QbTY9Sd365aNMn7\n\
 VpMkGfPa57Ji6COmA/gCBFy1HJ6mJs//xgJRpmDSxzm1LBwmO3w1CbZQh/LFDg4c\n\
 +xREZwG+S0JNwDnUGwIDAQAB\n\
 -----END PUBLIC KEY-----";
 
-const char *b64priv_key = "-----BEGIN RSA PRIVATE KEY-----\n\
+const char *privKey = "-----BEGIN RSA PRIVATE KEY-----\n\
 MIICXAIBAAKBgQDxrHo1+SMguB/UOytsPhjlDx4BIx5611YfxyVqPS46szesaQVB\n\
 wNiIaiMU2IceGMxvF8flovrZ+QbTY9Sd365aNMn7VpMkGfPa57Ji6COmA/gCBFy1\n\
 HJ6mJs//xgJRpmDSxzm1LBwmO3w1CbZQh/LFDg4c+xREZwG+S0JNwDnUGwIDAQAB\n\
@@ -50,122 +49,74 @@ zh+EfzHY5/m1Y0IfgVRPJlJSfS2TJMMp/g0k2dzRrBc=\n\
 -----END RSA PRIVATE KEY-----\n";
 
 
-RSA* loadPUBLICKeyFromString( const char* publicKeyStr )
+int padding = RSA_PKCS1_PADDING;
+ 
+RSA * createRSA(unsigned char * key,int public)
 {
-  BIO* bio = BIO_new_mem_buf( publicKeyStr, strlen(publicKeyStr) ) ;
-  
-  // Load the RSA key from the BIO
-  RSA* rsaPubKey = NULL;
-  PEM_read_bio_RSA_PUBKEY( bio, &rsaPubKey, NULL, NULL ) ;
-  if( !rsaPubKey )
-    printf( "ERROR: Could not load PUBLIC KEY!  PEM_read_bio_RSA_PUBKEY FAILED: %s\n", ERR_error_string( ERR_get_error(), NULL ) ) ;
-  
-  BIO_free( bio ) ;
-  return rsaPubKey ;
+    RSA *rsa= NULL;
+    BIO *keybio ;
+    keybio = BIO_new_mem_buf(key, -1);
+    if (keybio==NULL)
+    {
+        printf( "Failed to create key BIO");
+        return 0;
+    }
+    if(public)
+    {
+        rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa,NULL, NULL);
+    }
+    else
+    {
+        rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
+    }
+    if(rsa == NULL)
+    {
+        printf( "Failed to create RSA");
+    }
+ 
+    return rsa;
+}
+ 
+int public_encrypt(unsigned char * data,int data_len,unsigned char * key, unsigned char *encrypted)
+{
+    RSA * rsa = createRSA(key,1);
+    int result = RSA_public_encrypt(data_len,data,encrypted,rsa,padding);
+    return result;
+}
+int private_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted)
+{
+    RSA * rsa = createRSA(key,0);
+    int  result = RSA_private_decrypt(data_len,enc_data,decrypted,rsa,padding);
+    return result;
 }
 
-RSA* loadPRIVATEKeyFromString( const char* privateKeyStr )
+void printLastError(char *msg)
 {
-  BIO *bio = BIO_new_mem_buf( (void*)privateKeyStr, -1 );
-  //BIO_set_flags( bio, BIO_FLAGS_BASE64_NO_NL ) ; // NO NL
-  RSA* rsaPrivKey = PEM_read_bio_RSAPrivateKey( bio, NULL, NULL, NULL ) ;
-  
-  if ( !rsaPrivKey )
-    printf("ERROR: Could not load PRIVATE KEY!  PEM_read_bio_RSAPrivateKey FAILED: %s\n", ERR_error_string(ERR_get_error(), NULL));
-  
-  BIO_free( bio ) ;
-  return rsaPrivKey ;
+    char * err = malloc(130);;
+    ERR_load_crypto_strings();
+    ERR_error_string(ERR_get_error(), err);
+    printf("%s ERROR: %s\n",msg, err);
+    free(err);
 }
 
-unsigned char* rsaEncrypt( RSA *pubKey, const unsigned char* str, int dataSize, int *resultLen )
+void auth_encrypt (unsigned char* asciiData, unsigned char* dest)
 {
-  int rsaLen = RSA_size( pubKey ) ;
-  unsigned char* ed = (unsigned char*)malloc( rsaLen ) ;
-  
-  // RSA_public_encrypt() returns the size of the encrypted data
-  // (i.e., RSA_size(rsa)). RSA_private_decrypt() 
-  // returns the size of the recovered plaintext.
-  *resultLen = RSA_public_encrypt( dataSize, (const unsigned char*)str, ed, pubKey, PADDING ) ; 
-  if( *resultLen == -1 )
-    printf("ERROR: RSA_public_encrypt: %s\n", ERR_error_string(ERR_get_error(), NULL));
-
-  return ed ;
+    int encrypted_length= public_encrypt(asciiData, strlen(asciiData), (unsigned char*)publicKey, dest);
+    if(encrypted_length == -1)
+    {
+        printLastError("Public Encrypt failed ");
+        exit (0);
+    }
 }
 
-unsigned char* rsaDecrypt( RSA *privKey, const unsigned char* encryptedData, int *resultLen )
+unsigned char* auth_decrypt (unsigned char* asciiData)
 {
-  int rsaLen = RSA_size( privKey ) ; // That's how many bytes the decrypted data would be
-  
-  unsigned char *decryptedBin = (unsigned char*)malloc( rsaLen ) ;
-  *resultLen = RSA_private_decrypt( RSA_size(privKey), encryptedData, decryptedBin, privKey, PADDING ) ;
-  if( *resultLen == -1 )
-    printf( "ERROR: RSA_private_decrypt: %s\n", ERR_error_string(ERR_get_error(), NULL) ) ;
-    
-  return decryptedBin ;
-}
-
-unsigned char* makeAlphaString( int dataSize )
-{
-  unsigned char* s = (unsigned char*) malloc( dataSize ) ;
-  
-  int i;
-  for( i = 0 ; i < dataSize ; i++ )
-    s[i] = 65 + i ;
-  s[i-1]=0;
-  
-  return s ;
-}
-
-char* rsaEncryptThenBase64( RSA *pubKey, unsigned char* binaryData, int binaryDataLen, int *outLen )
-{
-  int encryptedDataLen ;
-  
-  // RSA encryption with public key
-  unsigned char* encrypted = rsaEncrypt( pubKey, binaryData, binaryDataLen, &encryptedDataLen ) ;
-  
-  // To base 64
-  int asciiBase64EncLen ;
-  char* asciiBase64Enc = base64( encrypted, encryptedDataLen, &asciiBase64EncLen ) ;
-  
-  // Destroy the encrypted data (we are using the base64 version of it)
-  free( encrypted ) ;
-  
-  // Return the base64 version of the encrypted data
-  return asciiBase64Enc ;
-}
-
-unsigned char* rsaDecryptThisBase64( RSA *privKey, char* base64String, int *outLen )
-{
-  int encBinLen ;
-  unsigned char* encBin = unbase64( base64String, (int)strlen( base64String ), &encBinLen ) ;
-  
-  // rsaDecrypt assumes length of encBin based on privKey
-  unsigned char *decryptedBin = rsaDecrypt( privKey, encBin, outLen ) ;
-  free( encBin ) ;
-  
-  return decryptedBin ;
-}
-
-char* auth_encrypt (char* asciiData)
-{
-  ERR_load_crypto_strings();  
-  
-  // LOAD PUBLIC KEY
-  RSA *pubKey = loadPUBLICKeyFromString( b64_pKey ) ;
-  int asciiB64ELen ;
-  char *temp = rsaEncryptThenBase64(pubKey, (unsigned char*)asciiData, (size_t)sizeof(asciiData)/sizeof(char), &asciiB64ELen );
-  RSA_free( pubKey ) ;
-  return temp;
-}
-
-char* auth_decrypt (char* asciiEncrypted)
-{
-  RSA *privKey = loadPRIVATEKeyFromString( b64priv_key ) ;
-  
-  int rBinLen ;
-  char* asciiDecrypted = (char*)rsaDecryptThisBase64(privKey, asciiEncrypted, &rBinLen ) ;
-  
-  RSA_free(privKey) ;
-  ERR_free_strings();
-  return asciiDecrypted;
+    char* decrypted;
+    int decrypted_length = private_decrypt(asciiData, strlen(asciiData), (unsigned char*)privKey, decrypted);
+    if(decrypted_length == -1)
+    {
+        printLastError("Private Decrypt failed ");
+        return NULL;
+    }
+    return decrypted;
 }
