@@ -49,3 +49,5 @@ missing
 stamp-h1
 *.Po
 *src/authserver*
+src/test
+src/html/passwd.cache
