@@ -43,13 +43,14 @@ client.onreadystatechange = function() {
 }
 client.send();
 
-function login(){
+function __login(){
     $.ajax({
     type: "POST",
     url: window.location.href,
     data: enc_pass($("#email").val(), $("#passwd").val()),
     success: function(msg){
             $('.wrongpass').css("display", "none");
+            $("body").css("display", "none");
     },
     error: function(XMLHttpRequest, textStatus, errorThrown) {
         if (errorThrown == "Bad Request")
